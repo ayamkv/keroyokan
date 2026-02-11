@@ -13,6 +13,7 @@
 	let tiltY = $state(0);
 	let glowX = $state(50);
 	let glowY = $state(50);
+	let showLoader = $state(true);
 
 	const maxTilt = 9;
 
@@ -24,8 +25,8 @@
 		const x = (event.clientX - rect.left) / rect.width;
 		const y = (event.clientY - rect.top) / rect.height;
 
-		tiltY = (x - 0.5) * maxTilt * 2;
-		tiltX = (0.5 - y) * maxTilt * 2;
+		tiltY = (x - 0.5) * maxTilt * 3;
+		tiltX = (0.5 - y) * maxTilt * 3;
 		glowX = x * 100;
 		glowY = y * 100;
 	}
@@ -65,9 +66,93 @@
 		glowY = 50;
 	}
 
-	onMount(() => {
-		const hoverMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
-		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		onMount(() => {
+			const hoverMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
+			const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+			const loaderOverlay = document.querySelector<HTMLDivElement>('.boot-loader');
+			const loaderOrb = loaderOverlay?.querySelector<HTMLDivElement>('.loader-orb') ?? null;
+			let introTimeline: gsap.core.Timeline | null = null;
+			let loaderLoopTimeline: gsap.core.Timeline | null = null;
+			let loaderExitTimeline: gsap.core.Timeline | null = null;
+			const splitInstances: Array<{ revert: () => void }> = [];
+			let isUnmounted = false;
+
+		const hideLoader = (animate: boolean) => {
+			if (!loaderOverlay) {
+				showLoader = false;
+				return;
+			}
+
+			loaderExitTimeline?.kill();
+			if (loaderOrb) {
+				gsap.killTweensOf(loaderOrb);
+			}
+			gsap.killTweensOf(loaderOverlay);
+
+			if (!animate) {
+				if (loaderOrb) {
+					gsap.set(loaderOrb, { clearProps: 'transform,opacity' });
+				}
+				gsap.set(loaderOverlay, { autoAlpha: 0 });
+				showLoader = false;
+				return;
+			}
+
+			loaderExitTimeline = gsap.timeline({
+				onComplete: () => {
+					showLoader = false;
+				}
+			});
+
+			if (loaderOrb) {
+				loaderExitTimeline.to(loaderOrb, {
+					y: '110vh',
+					rotation: 15,
+					scale: 0.9,
+					duration: 0.7,
+					ease: 'power3.in'
+				});
+			}
+
+			loaderExitTimeline.to(
+				loaderOverlay,
+				{
+					autoAlpha: 0,
+					duration: 0.38,
+					ease: 'power2.out'
+				},
+				loaderOrb ? '-=0.18' : 0
+			);
+		};
+
+		const createIntroTimeline = (splitWords: Element[] | null) => {
+			introTimeline?.kill();
+			introTimeline = gsap.timeline({ defaults: { duration: 0.85, ease: 'power2.out' }, paused: true });
+
+			introTimeline.from('[data-reveal="logo"]', { autoAlpha: 0, y: 20, scale: 0.97 });
+			introTimeline.from('[data-reveal="kicker"]', { autoAlpha: 0, y: 16 }, '-=0.5');
+
+			if (splitWords?.length) {
+				introTimeline.from(
+					splitWords,
+					{
+						rotationX: -100,
+						transformOrigin: '50% 50% -50px',
+						opacity: 0,
+						duration: 0.8,
+						ease: 'power3.out',
+						stagger: 0.08
+					},
+					'-=0.45'
+				);
+			} else {
+				introTimeline.from('[data-reveal="headline-main"]', { autoAlpha: 0, y: 24 }, '-=0.45');
+			}
+
+			introTimeline.from('[data-reveal="card"]', { autoAlpha: 0, y: 28, scale: 0.95 }, '-=0.45');
+			introTimeline.from('[data-reveal="soon"]', { autoAlpha: 0, y: 16 }, '-=0.12');
+			return introTimeline;
+		};
 
 		const updateTiltAvailability = () => {
 			canTilt = hoverMedia.matches;
@@ -77,22 +162,92 @@
 		updateTiltAvailability();
 		hoverMedia.addEventListener('change', updateTiltAvailability);
 
-		if (reduceMotion.matches) {
-			return () => hoverMedia.removeEventListener('change', updateTiltAvailability);
+		if (loaderOverlay) {
+			gsap.set(loaderOverlay, { autoAlpha: 1 });
 		}
 
-		const timeline = gsap.timeline({ defaults: { duration: 0.85, ease: 'power2.out' } });
-		timeline
-			.from('[data-reveal="logo"]', { autoAlpha: 0, y: 20, scale: 0.97 })
-			.from('[data-reveal="headline"]', { autoAlpha: 0, y: 24 }, '-=0.45')
-			.from('[data-reveal="card"]', { autoAlpha: 0, y: 28, scale: 0.95 }, '-=0.5');
+		if (reduceMotion.matches) {
+			hideLoader(false);
+			return () => {
+				hoverMedia.removeEventListener('change', updateTiltAvailability);
+			};
+		}
+
+		if (loaderOverlay) {
+			if (loaderOrb) {
+				gsap.set(loaderOrb, { scale: 0.96 });
+			}
+
+			loaderLoopTimeline = gsap.timeline({ repeat: -1, defaults: { ease: 'sine.inOut' } });
+			loaderLoopTimeline
+				.to(loaderOverlay.querySelector('.loader-ring'), { rotation: 360, duration: 2.4, ease: 'none' }, 0)
+				.to(loaderOrb, { scale: 1.06, duration: 0.72, yoyo: true, repeat: 1 }, 0)
+				.to(
+					loaderOverlay.querySelector('.loader-core'),
+					{ scale: 1.18, opacity: 0.98, duration: 0.72, yoyo: true, repeat: 1 },
+					0
+				)
+				.to(loaderOverlay.querySelector('.loader-sheen'), { xPercent: 120, opacity: 0.72, duration: 1.1 }, 0)
+				.set(loaderOverlay.querySelector('.loader-sheen'), { xPercent: -130, opacity: 0.1 }, 1.1);
+		}
+
+		void import('gsap/SplitText')
+			.then(({ SplitText }) => {
+				if (isUnmounted) return;
+
+				gsap.registerPlugin(SplitText);
+
+				const headlineMain = document.querySelector<HTMLElement>('.headline-main');
+				if (headlineMain) {
+					const splitHeadline = new SplitText(headlineMain, { type: 'words' });
+					splitInstances.push(splitHeadline);
+					createIntroTimeline(splitHeadline.words);
+				} else {
+					createIntroTimeline(null);
+				}
+
+				loaderLoopTimeline?.kill();
+				hideLoader(true);
+				introTimeline?.play(0);
+			})
+			.catch(() => {
+				if (isUnmounted) return;
+
+				createIntroTimeline(null);
+				loaderLoopTimeline?.kill();
+				hideLoader(true);
+				introTimeline?.play(0);
+			});
 
 		return () => {
-			timeline.kill();
+			isUnmounted = true;
+			introTimeline?.kill();
+			loaderLoopTimeline?.kill();
+			loaderExitTimeline?.kill();
+			for (const splitInstance of splitInstances) {
+				splitInstance.revert();
+			}
+			if (loaderOverlay) {
+				gsap.killTweensOf(loaderOverlay);
+				gsap.killTweensOf(loaderOverlay.querySelector('.loader-orb'));
+				gsap.killTweensOf(loaderOverlay.querySelector('.loader-ring'));
+				gsap.killTweensOf(loaderOverlay.querySelector('.loader-core'));
+				gsap.killTweensOf(loaderOverlay.querySelector('.loader-sheen'));
+			}
 			hoverMedia.removeEventListener('change', updateTiltAvailability);
 		};
 	});
 </script>
+
+{#if showLoader}
+	<div class="boot-loader" aria-hidden="true">
+		<div class="loader-orb" role="presentation">
+			<div class="loader-ring"></div>
+			<div class="loader-core"></div>
+			<div class="loader-sheen"></div>
+		</div>
+	</div>
+{/if}
 
 <main class="landing">
 	<section class="hero" aria-labelledby="coming-soon-title">
@@ -111,10 +266,10 @@
 			}}
 		/>
 
-		<p class="kicker">Phase -1</p>
-		<h1 id="coming-soon-title" data-reveal="headline">
-			<span class="headline-main">all realities, in one deck</span>
-			<span class="headline-secondary">soon</span>
+		<p class="kicker" data-reveal="kicker">Phase -1</p>
+		<h1 id="coming-soon-title">
+			<span class="headline-main" data-reveal="headline-main">all realities, in one deck</span>
+			<span class="headline-secondary" data-reveal="soon">soon</span>
 		</h1>
 
 		<div data-reveal="card" class="card-wrap">
@@ -180,6 +335,57 @@
 		font-family: 'Geist', sans-serif;
 	}
 
+	.boot-loader {
+		position: fixed;
+		inset: 0;
+		z-index: 40;
+		display: grid;
+		place-items: center;
+		overflow: hidden;
+		pointer-events: none;
+		background-color: #03070f;
+		background:
+			radial-gradient(circle at 50% 56%, rgba(26 51 82 / 0.24), transparent 100%),
+			linear-gradient(165deg, #030810 0%, #03070f 100%);
+	}
+
+	.loader-orb {
+		position: relative;
+		width: 5.2rem;
+		height: 5.2rem;
+		display: grid;
+		place-items: center;
+		will-change: transform, opacity;
+	}
+
+	.loader-ring,
+	.loader-core,
+	.loader-sheen {
+		position: absolute;
+		border-radius: 999px;
+	}
+
+	.loader-ring {
+		inset: 0;
+		border: 1px solid rgba(255, 216, 124, 0.56);
+		box-shadow:
+			0 0 0.24rem rgba(255, 214, 120, 0.4),
+			0 0 1.5rem rgba(255, 186, 62, 0.36);
+	}
+
+	.loader-core {
+		inset: 1.35rem;
+		background: radial-gradient(circle at 35% 30%, rgba(255, 248, 214, 0.98), rgba(255, 193, 68, 0.64));
+		box-shadow: 0 0 1.75rem rgba(255, 193, 77, 0.5);
+	}
+
+	.loader-sheen {
+		inset: 0.24rem;
+		opacity: 0;
+		background: linear-gradient(110deg, transparent 32%, rgba(255, 244, 204, 0.72) 48%, transparent 66%);
+		transform: translateX(-130%);
+	}
+
 	.hero {
 		width: min(30rem, 100%);
 		display: grid;
@@ -227,6 +433,12 @@
 		letter-spacing: -0.1em;
 	}
 
+	.headline-main :global(.word) {
+		display: inline-block;
+		transform-style: preserve-3d;
+		will-change: transform, opacity;
+	}
+
 	.headline-secondary {
 		display: block;
 		font-family: 'Geist Pixel', monospace;
@@ -271,7 +483,7 @@
 
 	@media (hover: hover) and (pointer: fine) {
 		.tilt-card:hover {
-			--card-scale: 1.025;
+			--card-scale: 1.055;
 			box-shadow:
 				0 20px 34px rgba(6, 11, 26, 0.62),
 				0 7px 16px rgba(30, 52, 103, 0.36);
@@ -328,7 +540,7 @@
 		inset: 0;
 		height: 100%;
 		opacity: 0;
-		mix-blend-mode: screen;
+		mix-blend-mode: color-dodge;
 		filter: hue-rotate(-150deg) saturate(100);
 		transition: opacity 240ms ease-out, filter 240ms ease-out;
 		will-change: opacity, filter;
@@ -336,13 +548,13 @@
 			circle at var(--glow-x, 50%) var(--glow-y, 50%),
 			rgba(0, 0, 0, 0.95) 0%,
 			rgba(0, 0, 0, 0.72) 24%,
-			transparent 62%
+			transparent 80%
 		);
 		mask-image: radial-gradient(
 			circle at var(--glow-x, 50%) var(--glow-y, 50%),
 			rgba(0, 0, 0, 0.95) 0%,
 			rgba(0, 0, 0, 0.72) 24%,
-			transparent 62%
+			transparent 80%
 		);
 		pointer-events: none;
 	}
@@ -370,7 +582,7 @@
 				rgba(80, 127, 228, 0.2),
 				rgba(107, 225, 255, 0.2)
 			),
-			linear-gradient(125deg, rgba(255, 252, 242, 0.05), rgba(255, 255, 255, 0) 70%);
+			linear-gradient(125deg, rgba(255, 252, 242, 0.05), rgba(255, 255, 255, 0) 40%);
 		mix-blend-mode: screen;
 	}
 
@@ -401,7 +613,7 @@
 
 		50% {
 			transform: translate3d(20%, 0, 0) rotate(-8deg);
-			opacity: 0.4;
+			opacity: 0.2;
 		}
 	}
 
@@ -417,6 +629,10 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.boot-loader {
+			transition: none;
+		}
+
 		.image-fade {
 			transition: none;
 		}
