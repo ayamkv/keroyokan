@@ -114,10 +114,9 @@
 
 	:global(body) {
 		background:
-			radial-gradient(circle at 14% 12%, rgb(253 0 92 / 24%), transparent 44%),
-			radial-gradient(circle at 84% 10%, rgb(254 204 57 / 18%), transparent 41%),
-			radial-gradient(circle at 48% 118%, rgb(253 0 92 / 13%), transparent 58%),
-			linear-gradient(165deg, #030915 0%, #071224 48%, #0b1c31 100%);
+
+			radial-gradient(circle at 48% 118%, rgba(206 151 0 / 0.16), transparent 30%),
+			linear-gradient(165deg, #000000 0%, #140A18 48%, #04070C 100%);
 	}
 
 	.landing {
@@ -187,13 +186,13 @@
 
 	.tilt-card {
 		position: relative;
-		border-radius: 0.9rem;
+		border-radius: 0.6rem;
 		overflow: hidden;
 		transform-style: preserve-3d;
 		transform: translateZ(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
 			scale(var(--card-scale, 1));
 		transition: transform 220ms ease-out, box-shadow 220ms ease-out;
-		outline: 1px solid rgba(117, 178, 235, 0.34);
+		outline: 0.4px solid rgba(117, 178, 235, 0.34);
 		box-shadow:
 			0 16px 28px rgba(4, 8, 20, 0.52),
 			0 4px 10px rgba(17, 42, 84, 0.35);
@@ -205,6 +204,11 @@
 			box-shadow:
 				0 20px 34px rgba(6, 11, 26, 0.62),
 				0 7px 16px rgba(30, 52, 103, 0.36);
+		}
+
+		.tilt-card:hover .holo-dup {
+			opacity: 1;
+			filter: hue-rotate(-150deg) saturate(2.8);
 		}
 	}
 
@@ -227,9 +231,23 @@
 		position: absolute;
 		inset: 0;
 		height: 100%;
-		opacity: 0.18;
+		opacity: 0;
 		mix-blend-mode: screen;
-		filter: hue-rotate(24deg) saturate(1.18);
+		filter: hue-rotate(-150deg) saturate(100);
+		transition: opacity 240ms ease-out, filter 240ms ease-out;
+		will-change: opacity, filter;
+		-webkit-mask-image: radial-gradient(
+			circle at var(--glow-x, 50%) var(--glow-y, 50%),
+			rgba(0, 0, 0, 0.95) 0%,
+			rgba(0, 0, 0, 0.72) 24%,
+			transparent 62%
+		);
+		mask-image: radial-gradient(
+			circle at var(--glow-x, 50%) var(--glow-y, 50%),
+			rgba(0, 0, 0, 0.95) 0%,
+			rgba(0, 0, 0, 0.72) 24%,
+			transparent 62%
+		);
 		pointer-events: none;
 	}
 
@@ -256,7 +274,7 @@
 				rgba(80, 127, 228, 0.2),
 				rgba(107, 225, 255, 0.2)
 			),
-			linear-gradient(125deg, rgba(255, 252, 242, 0.05), rgba(255, 255, 255, 0) 44%);
+			linear-gradient(125deg, rgba(255, 252, 242, 0.05), rgba(255, 255, 255, 0) 70%);
 		mix-blend-mode: screen;
 	}
 
@@ -271,7 +289,7 @@
 			rgba(255, 191, 86, 0.12) 52%,
 			rgba(255, 255, 255, 0) 66%
 		);
-		opacity: 0.16;
+		opacity: 0.40;
 		mix-blend-mode: screen;
 		transform: translate3d(-20%, 0, 0) rotate(-8deg);
 		will-change: transform, opacity;
@@ -287,7 +305,7 @@
 
 		50% {
 			transform: translate3d(20%, 0, 0) rotate(-8deg);
-			opacity: 0.2;
+			opacity: 0.4;
 		}
 	}
 
@@ -306,6 +324,10 @@
 		.tilt-card {
 			transition: none;
 			transform: none;
+		}
+
+		.holo-dup {
+			transition: none;
 		}
 
 		.holo {
