@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { gsap } from 'gsap';
+	import logoImage from '$lib/assets/keroyokan_logo.png?enhanced';
+	import cardImage from '$lib/assets/card_backcover.png?enhanced';
+	import cardImageUrl from '$lib/assets/card_backcover.png';
 
 	let canTilt = $state(false);
+	let isTouchActive = $state(false);
+	let logoLoaded = $state(false);
+	let cardLoaded = $state(false);
 	let tiltX = $state(0);
 	let tiltY = $state(0);
 	let glowX = $state(50);
@@ -10,9 +16,7 @@
 
 	const maxTilt = 9;
 
-	function handlePointerMove(event: PointerEvent) {
-		if (!canTilt) return;
-
+	function updatePointerPosition(event: PointerEvent) {
 		const target = event.currentTarget as HTMLDivElement | null;
 		if (!target) return;
 
@@ -24,6 +28,34 @@
 		tiltX = (0.5 - y) * maxTilt * 2;
 		glowX = x * 100;
 		glowY = y * 100;
+	}
+
+	function handlePointerMove(event: PointerEvent) {
+		const touchTracking = event.pointerType === 'touch' && isTouchActive;
+		if (!canTilt && !touchTracking) return;
+		updatePointerPosition(event);
+	}
+
+	function handlePointerDown(event: PointerEvent) {
+		if (event.pointerType !== 'touch') return;
+
+		isTouchActive = true;
+		updatePointerPosition(event);
+
+		const target = event.currentTarget as HTMLDivElement | null;
+		target?.setPointerCapture(event.pointerId);
+	}
+
+	function endTouchInteraction(event: PointerEvent) {
+		if (event.pointerType !== 'touch') return;
+
+		const target = event.currentTarget as HTMLDivElement | null;
+		if (target?.hasPointerCapture(event.pointerId)) {
+			target.releasePointerCapture(event.pointerId);
+		}
+
+		isTouchActive = false;
+		resetTilt();
 	}
 
 	function resetTilt() {
@@ -39,7 +71,7 @@
 
 		const updateTiltAvailability = () => {
 			canTilt = hoverMedia.matches;
-			if (!canTilt) resetTilt();
+			if (!canTilt && !isTouchActive) resetTilt();
 		};
 
 		updateTiltAvailability();
@@ -64,13 +96,19 @@
 
 <main class="landing">
 	<section class="hero" aria-labelledby="coming-soon-title">
-		<img
+		<enhanced:img
 			data-reveal="logo"
-			class="logo"
-			src="/keroyokan_logo.png"
+			class="logo image-fade"
+			class:is-loaded={logoLoaded}
+			src={logoImage}
 			alt="Keroyokan logo"
-			width="228"
-			height="228"
+			loading="eager"
+			fetchpriority="high"
+			decoding="async"
+			sizes="(max-width: 42rem) 4rem, 5rem"
+			onload={() => {
+				logoLoaded = true;
+			}}
 		/>
 
 		<p class="kicker">Phase -1</p>
@@ -83,21 +121,35 @@
 			<div
 				class="tilt-card"
 				class:tilt-enabled={canTilt}
+				class:is-active={isTouchActive}
 				role="img"
 				aria-label="Interactive launch artwork preview"
+				onpointerdown={handlePointerDown}
 				onpointermove={handlePointerMove}
-				onpointerleave={resetTilt}
+				onpointerup={endTouchInteraction}
+				onpointercancel={endTouchInteraction}
+				onpointerleave={(event) => {
+					if (event.pointerType === 'touch') return;
+					resetTilt();
+				}}
 				style={`--tilt-x:${tiltX}deg; --tilt-y:${tiltY}deg; --glow-x:${glowX}%; --glow-y:${glowY}%;`}
 			>
-				<img
-					class="cover"
-					src="/card_backcover.png"
+				<enhanced:img
+					class="cover image-fade"
+					class:is-loaded={cardLoaded}
+					src={cardImage}
 					alt="Decorative card artwork previewing the Keroyokan launch"
+					loading="lazy"
+					decoding="async"
+					sizes="(max-width: 42rem) 11.4rem, 12.2rem"
+					onload={() => {
+						cardLoaded = true;
+					}}
 				/>
 				<img
 					aria-hidden="true"
 					class="cover holo-dup"
-					src="/card_backcover.png"
+					src={cardImageUrl}
 					alt=""
 				/>
 				<div aria-hidden="true" class="glow"></div>
@@ -140,6 +192,12 @@
 		width: clamp(3.5rem, 8vw, 5rem);
 		height: auto;
 		filter: drop-shadow(0 14px 18px rgba(25, 36, 68, 0.34));
+	}
+
+	.logo :global(img) {
+		width: 100%;
+		height: auto;
+		display: block;
 	}
 
 	.kicker {
@@ -192,10 +250,23 @@
 		transform: translateZ(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
 			scale(var(--card-scale, 1));
 		transition: transform 220ms ease-out, box-shadow 220ms ease-out;
+		touch-action: none;
 		outline: 0.4px solid rgba(117, 178, 235, 0.34);
 		box-shadow:
 			0 16px 28px rgba(4, 8, 20, 0.52),
 			0 4px 10px rgba(17, 42, 84, 0.35);
+	}
+
+	.tilt-card.is-active {
+		--card-scale: 1.025;
+		box-shadow:
+			0 20px 34px rgba(6, 11, 26, 0.62),
+			0 7px 16px rgba(30, 52, 103, 0.36);
+	}
+
+	.tilt-card.is-active .holo-dup {
+		opacity: 1;
+		filter: hue-rotate(-150deg) saturate(2.8);
 	}
 
 	@media (hover: hover) and (pointer: fine) {
@@ -225,6 +296,31 @@
 		width: 100%;
 		height: auto;
 		object-fit: cover;
+	}
+
+	.cover :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+		object-fit: cover;
+	}
+
+	.image-fade {
+		opacity: 0;
+		transition: opacity 420ms ease-out;
+	}
+
+	.image-fade :global(img) {
+		filter: blur(0.5rem);
+		transition: filter 420ms ease-out;
+	}
+
+	.image-fade.is-loaded {
+		opacity: 1;
+	}
+
+	.image-fade.is-loaded :global(img) {
+		filter: blur(0);
 	}
 
 	.holo-dup {
@@ -321,6 +417,14 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.image-fade {
+			transition: none;
+		}
+
+		.image-fade :global(img) {
+			transition: none;
+		}
+
 		.tilt-card {
 			transition: none;
 			transform: none;
