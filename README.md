@@ -46,3 +46,16 @@ npm run build
 - Project plan: `PROJECT_PLAN.md`
 - Commit/push and quality gates: `WORKFLOW.md`
 - beads workspace guide: `AGENTS.md`
+
+## Cloudflare Deploy
+
+This repo is configured for Cloudflare via `@sveltejs/adapter-cloudflare` and `wrangler.jsonc`.
+
+- Build command: `npm run build`
+- Deploy command (Workers): `npx wrangler deploy`
+
+If using Cloudflare Pages Git integration, set:
+
+- Framework preset: `SvelteKit`
+- Build command: `npm run build`
+- Build output directory: `.svelte-kit/cloudflare`
