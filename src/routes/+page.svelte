@@ -94,6 +94,12 @@
 					src="/card_backcover.png"
 					alt="Decorative card artwork previewing the Keroyokan launch"
 				/>
+				<img
+					aria-hidden="true"
+					class="cover holo-dup"
+					src="/card_backcover.png"
+					alt=""
+				/>
 				<div aria-hidden="true" class="glow"></div>
 				<div aria-hidden="true" class="holo"></div>
 			</div>
@@ -108,9 +114,9 @@
 
 	:global(body) {
 		background:
-			radial-gradient(circle at 14% 12%, rgba(64, 188, 255, 0.22), transparent 44%),
-			radial-gradient(circle at 84% 10%, rgba(255, 188, 88, 0.15), transparent 41%),
-			radial-gradient(circle at 48% 118%, rgba(30, 88, 172, 0.24), transparent 58%),
+			radial-gradient(circle at 14% 12%, rgb(253 0 92 / 24%), transparent 44%),
+			radial-gradient(circle at 84% 10%, rgb(254 204 57 / 18%), transparent 41%),
+			radial-gradient(circle at 48% 118%, rgb(253 0 92 / 13%), transparent 58%),
 			linear-gradient(165deg, #030915 0%, #071224 48%, #0b1c31 100%);
 	}
 
@@ -160,7 +166,8 @@
 		max-width: 18ch;
 		font-size: clamp(1.45rem, 4.1vw, 2.15rem);
 		font-weight: 600;
-		letter-spacing: -0.01em;
+		font-family: 'Geist Pixel', monospace;
+		letter-spacing: -0.1em;
 	}
 
 	.headline-secondary {
@@ -214,6 +221,16 @@
 		width: 100%;
 		height: auto;
 		object-fit: cover;
+	}
+
+	.holo-dup {
+		position: absolute;
+		inset: 0;
+		height: 100%;
+		opacity: 0.18;
+		mix-blend-mode: screen;
+		filter: hue-rotate(24deg) saturate(1.18);
+		pointer-events: none;
 	}
 
 	.glow {
