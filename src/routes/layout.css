@@ -1,10 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 @import "tailwindcss";
 
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-sans-variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-mono-variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Pixel';
+  src: url('/fonts/geist-pixel-square.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --radius: 0.625rem;
@@ -119,7 +141,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+    font-family: 'Geist', 'Trebuchet MS', sans-serif;
     font-variant-numeric: tabular-nums;
   }
 
@@ -127,7 +149,7 @@
   h2,
   h3,
   h4 {
-    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-family: 'Geist', 'Trebuchet MS', sans-serif;
     letter-spacing: 0.01em;
   }
 }
