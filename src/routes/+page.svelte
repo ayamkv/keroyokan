@@ -1,18 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { gsap } from 'gsap';
+	import Instagram from '@lucide/svelte/icons/instagram';
 	import logoImage from '$lib/assets/keroyokan_logo.png?enhanced';
 	import cardImage from '$lib/assets/card_backcover.png?enhanced';
 	import cardImageUrl from '$lib/assets/card_backcover.png';
 
 	let canTilt = $state(false);
 	let isTouchActive = $state(false);
-	let logoLoaded = $state(false);
 	let cardLoaded = $state(false);
 	let tiltX = $state(0);
 	let tiltY = $state(0);
 	let glowX = $state(50);
 	let glowY = $state(50);
+	let canReactBackground = $state(false);
+	let isBackgroundHovering = $state(false);
+	let bgX = $state(50);
+	let bgY = $state(50);
 	let showLoader = $state(true);
 
 	const maxTilt = 9;
@@ -64,6 +68,25 @@
 		tiltY = 0;
 		glowX = 50;
 		glowY = 50;
+	}
+
+	function handleBackgroundPointerMove(event: PointerEvent) {
+		if (!canReactBackground || event.pointerType !== 'mouse') return;
+
+		const target = event.currentTarget as HTMLElement | null;
+		if (!target) return;
+
+		const rect = target.getBoundingClientRect();
+		const x = ((event.clientX - rect.left) / rect.width) * 100;
+		const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+		bgX = x;
+		bgY = y;
+		isBackgroundHovering = true;
+	}
+
+	function handleBackgroundPointerLeave() {
+		isBackgroundHovering = false;
 	}
 
 		onMount(() => {
@@ -150,12 +173,17 @@
 			}
 
 			introTimeline.from('[data-reveal="card"]', { autoAlpha: 0, y: 28, scale: 0.95 }, '-=0.45');
+			introTimeline.from('[data-reveal="social"]', { autoAlpha: 0, y: 12 }, '-=0.08');
 			introTimeline.from('[data-reveal="soon"]', { autoAlpha: 0, y: 16 }, '-=0.12');
 			return introTimeline;
 		};
 
 		const updateTiltAvailability = () => {
 			canTilt = hoverMedia.matches;
+			canReactBackground = hoverMedia.matches;
+			if (!canReactBackground) {
+				isBackgroundHovering = false;
+			}
 			if (!canTilt && !isTouchActive) resetTilt();
 		};
 
@@ -249,21 +277,24 @@
 	</div>
 {/if}
 
-<main class="landing">
+<main
+	class="landing"
+	onpointermove={handleBackgroundPointerMove}
+	onpointerleave={handleBackgroundPointerLeave}
+	style={`--bg-x:${bgX}%; --bg-y:${bgY}%; --bg-reactive-opacity:${canReactBackground && isBackgroundHovering
+		? 1
+		: 0};`}
+>
 	<section class="hero" aria-labelledby="coming-soon-title">
 		<enhanced:img
 			data-reveal="logo"
-			class="logo image-fade"
-			class:is-loaded={logoLoaded}
+			class="logo"
 			src={logoImage}
 			alt="Keroyokan logo"
 			loading="eager"
 			fetchpriority="high"
 			decoding="async"
 			sizes="(max-width: 42rem) 4rem, 5rem"
-			onload={() => {
-				logoLoaded = true;
-			}}
 		/>
 
 		<p class="kicker" data-reveal="kicker">Phase -1</p>
@@ -311,6 +342,18 @@
 				<div aria-hidden="true" class="holo"></div>
 			</div>
 		</div>
+
+		<a
+			data-reveal="social"
+			class="social-link"
+			href="https://instagram.com/keroyokanmultisemesta"
+			target="_blank"
+			rel="noreferrer noopener"
+			aria-label="Follow Keroyokan Multisemesta on Instagram"
+		>
+			<Instagram size={15} strokeWidth={1.8} />
+			<span>@keroyokanmultisemesta</span>
+		</a>
 	</section>
 </main>
 
@@ -321,18 +364,46 @@
 
 	:global(body) {
 		background:
-
-			radial-gradient(circle at 48% 118%, rgba(206 151 0 / 0.16), transparent 30%),
+			radial-gradient(circle at 48% 118%, rgba(206 110 0 / 0.16), transparent 30%),
+			radial-gradient(circle, rgba(184 199 229 / 0.03) 0.8px, transparent 1px),
 			linear-gradient(165deg, #000000 0%, #140A18 48%, #04070C 100%);
+		background-size: auto, 20px 20px, auto;
+		background-position: center, 0 0, center;
 	}
 
 	.landing {
 		min-height: 100svh;
+		position: relative;
+		overflow: hidden;
 		display: grid;
 		place-items: center;
 		padding: clamp(1rem, 2.1vw, 1.8rem);
 		color: #ecf2ff;
 		font-family: 'Geist', sans-serif;
+	}
+
+	.landing::before {
+		content: '';
+		position: absolute;
+		inset: -12%;
+		z-index: 0;
+		pointer-events: none;
+		opacity: calc(var(--bg-reactive-opacity, 0) * 0.5);
+		background-image: radial-gradient(circle, rgba(212, 227, 255, 0.42) 1px, transparent 1px);
+		background-size: 20px 20px;
+		mask-image: radial-gradient(
+			13rem circle at var(--bg-x, 50%) var(--bg-y, 50%),
+			rgba(0, 0, 0, 1) 0%,
+			rgba(0, 0, 0, 0.8) 45%,
+			transparent 85%
+		);
+		-webkit-mask-image: radial-gradient(
+			13rem circle at var(--bg-x, 50%) var(--bg-y, 50%),
+			rgba(0, 0, 0, 1) 0%,
+			rgba(0, 0, 0, 0.8) 45%,
+			transparent 85%
+		);
+		transition: opacity 180ms ease-out;
 	}
 
 	.boot-loader {
@@ -345,8 +416,8 @@
 		pointer-events: none;
 		background-color: #03070f;
 		background:
-			radial-gradient(circle at 50% 56%, rgba(26 51 82 / 0.24), transparent 100%),
-			linear-gradient(165deg, #030810 0%, #03070f 100%);
+			radial-gradient(circle at 50% 56%, rgba(18 14 44 / 0.24), transparent 100%),
+			linear-gradient(165deg, #040310 0%, #03070f 100%);
 	}
 
 	.loader-orb {
@@ -382,12 +453,14 @@
 	.loader-sheen {
 		inset: 0.24rem;
 		opacity: 0;
-		background: linear-gradient(110deg, transparent 32%, rgba(255, 244, 204, 0.72) 48%, transparent 66%);
+		background: linear-gradient(110deg, transparent 0%, rgba(255, 244, 204, 0.72) 48%, transparent 0%);
 		transform: translateX(-130%);
 	}
 
 	.hero {
 		width: min(30rem, 100%);
+		position: relative;
+		z-index: 1;
 		display: grid;
 		justify-items: center;
 		text-align: center;
@@ -452,6 +525,34 @@
 		width: min(100%, 12.2rem);
 		margin-top: clamp(0.45rem, 1.4vw, 0.75rem);
 		perspective: 1100px;
+	}
+
+	.social-link {
+		margin-top: 0.9rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.42rem;
+		color: rgba(219, 229, 255, 0.82);
+		text-decoration: none;
+		font-family: 'Geist Mono', monospace;
+		font-size: 0.72rem;
+		letter-spacing: 0.02em;
+		padding: 0.32rem 0.55rem;
+		border-radius: 999px;
+		outline: 1px solid rgba(111, 146, 203, 0.32);
+		background: rgba(8, 14, 27, 0.24);
+		transition: color 180ms ease-out, background-color 180ms ease-out, outline-color 180ms ease-out;
+	}
+
+	.social-link:hover {
+		color: rgba(236, 243, 255, 0.96);
+		background: rgba(14, 24, 42, 0.44);
+		outline-color: rgba(140, 180, 240, 0.52);
+	}
+
+	.social-link:focus-visible {
+		outline: 1px solid rgba(180, 211, 255, 0.92);
+		outline-offset: 2px;
 	}
 
 	.tilt-card {
@@ -625,6 +726,12 @@
 
 		.card-wrap {
 			width: min(100%, 11.4rem);
+		}
+	}
+
+	@media (hover: none), (pointer: coarse) {
+		.landing::before {
+			display: none;
 		}
 	}
 
