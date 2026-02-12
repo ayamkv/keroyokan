@@ -10,6 +10,7 @@
 	let canTilt = $state(false);
 	let isTouchActive = $state(false);
 	let cardLoaded = $state(false);
+	let floatingLoaded = $state(false);
 	let tiltX = $state(0);
 	let tiltY = $state(0);
 	let glowX = $state(50);
@@ -21,6 +22,7 @@
 	let showLoader = $state(true);
 	let floatInnerShiftX = $state(0);
 	let floatInnerShiftY = $state(0);
+	let isIntroAnimating = $state(false);
 
 	const maxTilt = 9;
 
@@ -42,12 +44,14 @@
 	}
 
 	function handlePointerMove(event: PointerEvent) {
+		if (isIntroAnimating) return;
 		const touchTracking = event.pointerType === 'touch' && isTouchActive;
 		if (!canTilt && !touchTracking) return;
 		updatePointerPosition(event);
 	}
 
 	function handlePointerDown(event: PointerEvent) {
+		if (isIntroAnimating) return;
 		if (event.pointerType !== 'touch') return;
 
 		isTouchActive = true;
@@ -66,10 +70,12 @@
 		}
 
 		isTouchActive = false;
+		if (isIntroAnimating) return;
 		resetTilt();
 	}
 
 	function handlePointerLeave(event: PointerEvent) {
+		if (isIntroAnimating) return;
 		if (event.pointerType === 'touch') return;
 		resetTilt();
 	}
@@ -111,11 +117,28 @@
 			const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 			const loaderOverlay = document.querySelector<HTMLDivElement>('.boot-loader');
 			const loaderOrb = loaderOverlay?.querySelector<HTMLDivElement>('.loader-orb') ?? null;
-			let introTimeline: gsap.core.Timeline | null = null;
-			let loaderLoopTimeline: gsap.core.Timeline | null = null;
-			let loaderExitTimeline: gsap.core.Timeline | null = null;
-			const splitInstances: Array<{ revert: () => void }> = [];
-			let isUnmounted = false;
+		let introTimeline: gsap.core.Timeline | null = null;
+		let loaderLoopTimeline: gsap.core.Timeline | null = null;
+		let loaderExitTimeline: gsap.core.Timeline | null = null;
+		const introTiltPose = {
+			tiltX: 0,
+			tiltY: 0,
+			glowX: 50,
+			glowY: 50,
+			floatInnerShiftX: 0,
+			floatInnerShiftY: 0
+		};
+		const splitInstances: Array<{ revert: () => void }> = [];
+		let isUnmounted = false;
+
+		const applyIntroTiltPose = () => {
+			tiltX = introTiltPose.tiltX;
+			tiltY = introTiltPose.tiltY;
+			glowX = introTiltPose.glowX;
+			glowY = introTiltPose.glowY;
+			floatInnerShiftX = introTiltPose.floatInnerShiftX;
+			floatInnerShiftY = introTiltPose.floatInnerShiftY;
+		};
 
 		const hideLoader = (animate: boolean) => {
 			if (!loaderOverlay) {
@@ -189,7 +212,50 @@
 				introTimeline.from('[data-reveal="headline-main"]', { autoAlpha: 0, y: 24 }, '-=0.45');
 			}
 
-			introTimeline.from('[data-reveal="card"]', { autoAlpha: 0, y: 28, scale: 0.95 }, '-=0.45');
+			introTimeline.add(() => {
+				isIntroAnimating = true;
+				Object.assign(introTiltPose, {
+					tiltX: 10.8,
+					tiltY: -14.4,
+					glowX: 72,
+					glowY: 26,
+					floatInnerShiftX: 3.4,
+					floatInnerShiftY: -2.8
+				});
+				applyIntroTiltPose();
+			}, '-=0.45');
+
+			introTimeline.from('[data-reveal="card"]', { autoAlpha: 0, y: 28, scale: 0.95 }, '<');
+			introTimeline.to(
+				introTiltPose,
+				{
+					tiltX: -3.2,
+					tiltY: 4.2,
+					glowX: 38,
+					glowY: 58,
+					floatInnerShiftX: -1.5,
+					floatInnerShiftY: 1.2,
+					duration: 0.4,
+					ease: 'sine.out',
+					onUpdate: applyIntroTiltPose
+				},
+				'<+=0.08'
+			);
+			introTimeline.to(introTiltPose, {
+				tiltX: 0,
+				tiltY: 0,
+				glowX: 50,
+				glowY: 50,
+				floatInnerShiftX: 0,
+				floatInnerShiftY: 0,
+				duration: 0.62,
+				ease: 'power3.out',
+				onUpdate: applyIntroTiltPose
+			});
+			introTimeline.add(() => {
+				isIntroAnimating = false;
+				resetTilt();
+			});
 			introTimeline.from('[data-reveal="social"]', { autoAlpha: 0, y: 12 }, '-=0.08');
 			introTimeline.from('[data-reveal="soon"]', { autoAlpha: 0, y: 16 }, '-=0.12');
 			return introTimeline;
@@ -212,9 +278,11 @@
 		}
 
 		if (reduceMotion.matches) {
+			isIntroAnimating = false;
 			hideLoader(false);
 			return () => {
 				hoverMedia.removeEventListener('change', updateTiltAvailability);
+				gsap.killTweensOf(introTiltPose);
 			};
 		}
 
@@ -266,9 +334,11 @@
 
 		return () => {
 			isUnmounted = true;
+			isIntroAnimating = false;
 			introTimeline?.kill();
 			loaderLoopTimeline?.kill();
 			loaderExitTimeline?.kill();
+			gsap.killTweensOf(introTiltPose);
 			for (const splitInstance of splitInstances) {
 				splitInstance.revert();
 			}
@@ -344,7 +414,7 @@
 						class="floating-logo-inner"
 						style={`--float-inner-shift-x:${floatInnerShiftX}px; --float-inner-shift-y:${floatInnerShiftY}px;`}
 					>
-						<div class="floating-logo-shell">
+						<div class="floating-logo-shell" class:is-loaded={floatingLoaded}>
 							<enhanced:img
 								class="floating-logo floating-logo-base"
 								src={logoImage}
@@ -353,6 +423,9 @@
 								decoding="async"
 								sizes="(max-width: 42rem) 12.1rem, 16.5rem"
 								draggable="false"
+								onload={() => {
+									floatingLoaded = true;
+								}}
 							/>
 							<img
 								class="floating-logo floating-logo-holo"
@@ -378,6 +451,7 @@
 				<div
 					class="tilt-card"
 					class:is-active={isTouchActive}
+					class:is-loaded={cardLoaded}
 					role="img"
 					aria-label="Interactive launch artwork preview"
 				>
@@ -628,10 +702,15 @@
 		position: relative;
 		isolation: isolate;
 		border-radius: 1rem;
+		opacity: 0;
 		transform: scale(var(--floating-logo-scale));
-		transition: transform 260ms ease-out, filter 260ms ease-out;
+		transition: opacity 420ms ease-out, transform 260ms ease-out, filter 260ms ease-out;
 		filter: drop-shadow(0 7px 14px rgba(4, 10, 22, 0.5));
-		will-change: transform, filter;
+		will-change: opacity, transform, filter;
+	}
+
+	.floating-logo-shell.is-loaded {
+		opacity: 1;
 	}
 
 	.floating-logo {
@@ -749,14 +828,19 @@
 		position: relative;
 		border-radius: 0.6rem;
 		overflow: hidden;
+		opacity: 0;
 		transform-style: preserve-3d;
 		transform: translateZ(0) scale(var(--card-scale, 1));
-		transition: transform 220ms ease-out, box-shadow 220ms ease-out;
+		transition: opacity 420ms ease-out, transform 220ms ease-out, box-shadow 220ms ease-out;
 		touch-action: none;
 		outline: 0.4px solid rgba(117, 178, 235, 0.34);
 		box-shadow:
 			0 16px 28px rgba(4, 8, 20, 0.52),
 			0 4px 10px rgba(17, 42, 84, 0.35);
+	}
+
+	.tilt-card.is-loaded {
+		opacity: 1;
 	}
 
 	.tilt-card::before {
@@ -1021,6 +1105,14 @@
 	}
 
 	@media (max-width: 42rem) {
+		:global(body) {
+			background:
+				radial-gradient(circle at 48% 118%, rgba(206 110 0 / 0.19), transparent 32%),
+				radial-gradient(circle, rgba(204 221 252 / 0.082) 0.95px, transparent 1.05px),
+				linear-gradient(165deg, #000000 0%, #140A18 48%, #04070C 100%);
+			background-size: auto, 18px 18px, auto;
+		}
+
 		.hero {
 			align-content: center;
 			width: min(25rem, 100%);
