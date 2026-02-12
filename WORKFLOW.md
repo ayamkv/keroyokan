@@ -1,6 +1,6 @@
 # Keroyokan Git and Delivery Workflow
 
-Last updated: 2026-02-11
+Last updated: 2026-02-12
 
 ## 1) Branching Rule
 
@@ -22,6 +22,14 @@ Commit when one logical unit is complete and stable, for example:
 - You are about to context switch
 
 Do not wait for a huge batch. Prefer small, meaningful commits.
+
+## 2.5) Beads-First Rule (Mandatory)
+
+- Do not start implementation work without a beads issue.
+- Start every work session with `bd ready`.
+- If no issue exists, create one with `bd create ...` before coding.
+- Claim work explicitly with `bd update <id> --status in_progress`.
+- Keep work status in beads updated as the source of truth.
 
 ## 3) When To Push
 
@@ -86,6 +94,7 @@ Use this checklist on every visual change:
 Recommended screenshot folder:
 
 - `artifacts/screenshots/`
+- keep screenshots local-only (do not commit)
 
 Recommended filename pattern:
 
@@ -93,22 +102,38 @@ Recommended filename pattern:
 
 ## 8) beads Integration Rule
 
-- Start task: mark beads issue `in_progress`
-- During work: keep notes in beads issue comments/notes
-- Commit: include issue ID in message body/footer when possible
-- Finish: close beads issue only after merge/acceptance
+- One-time setup per clone:
+  - `bd onboard`
+  - `bd hooks install`
+- Start task:
+  - `bd ready`
+  - `bd show <id>`
+  - `bd update <id> --status in_progress`
+- During work:
+  - keep notes in beads issue comments/notes
+  - if scope changes, create follow-up issues instead of hidden TODOs
+- Commit:
+  - include beads issue ID in commit body/footer when possible
+- Finish task:
+  - `bd close <id>` when acceptance is met
+  - `bd sync` before push
+  - `git push`
 
 ## 9) Suggested Command Flow
 
 Typical sequence:
 
 1. `git checkout -b <branch-name>`
-2. implement change
-3. run quality gates
-4. `git add <files>`
-5. `git commit -m "type(scope): summary"`
-6. `git push -u origin <branch-name>`
-7. open PR
+2. `bd ready` or `bd create ...`
+3. `bd update <id> --status in_progress`
+4. implement change
+5. run quality gates
+6. `git add <files>`
+7. `git commit -m "type(scope): summary"`
+8. `bd close <id>` (when done)
+9. `bd sync`
+10. `git push -u origin <branch-name>`
+11. open PR
 
 ---
 
