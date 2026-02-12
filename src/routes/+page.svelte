@@ -18,6 +18,8 @@
 	let bgX = $state(50);
 	let bgY = $state(50);
 	let showLoader = $state(true);
+	let logoShiftX = $state(0);
+	let logoShiftY = $state(0);
 
 	const maxTilt = 9;
 
@@ -33,6 +35,8 @@
 		tiltX = (0.5 - y) * maxTilt * 3;
 		glowX = x * 100;
 		glowY = y * 100;
+		logoShiftX = (x - 0.5) * 6;
+		logoShiftY = (y - 0.5) * 4;
 	}
 
 	function handlePointerMove(event: PointerEvent) {
@@ -68,6 +72,8 @@
 		tiltY = 0;
 		glowX = 50;
 		glowY = 50;
+		logoShiftX = 0;
+		logoShiftY = 0;
 	}
 
 	function handleBackgroundPointerMove(event: PointerEvent) {
@@ -286,16 +292,18 @@
 		: 0};`}
 >
 	<section class="hero" aria-labelledby="coming-soon-title">
-		<enhanced:img
-			data-reveal="logo"
-			class="logo"
-			src={logoImage}
-			alt="Keroyokan logo"
-			loading="eager"
-			fetchpriority="high"
-			decoding="async"
-			sizes="(max-width: 42rem) 4rem, 5rem"
-		/>
+		<div class="logo-wrap" style={`--logo-shift-x:${logoShiftX}px; --logo-shift-y:${logoShiftY}px;`}>
+			<enhanced:img
+				data-reveal="logo"
+				class="logo"
+				src={logoImage}
+				alt="Keroyokan logo"
+				loading="eager"
+				fetchpriority="high"
+				decoding="async"
+				sizes="(max-width: 42rem) 4rem, 5rem"
+			/>
+		</div>
 
 		<p class="kicker" data-reveal="kicker">Phase -1</p>
 		<h1 id="coming-soon-title">
@@ -473,6 +481,12 @@
 		filter: drop-shadow(0 14px 18px rgba(25, 36, 68, 0.34));
 	}
 
+	.logo-wrap {
+		transform: translate3d(var(--logo-shift-x, 0px), var(--logo-shift-y, 0px), 0);
+		transition: transform 260ms ease-out;
+		will-change: transform;
+	}
+
 	.logo :global(img) {
 		width: 100%;
 		height: auto;
@@ -570,11 +584,42 @@
 			0 4px 10px rgba(17, 42, 84, 0.35);
 	}
 
+	.tilt-card::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		padding: 1px;
+		border-radius: inherit;
+		pointer-events: none;
+		opacity: 0.22;
+		background:
+			linear-gradient(
+				105deg,
+				rgba(255, 255, 255, 0) 18%,
+				rgba(191, 230, 255, 0.45) 42%,
+				rgba(255, 211, 154, 0.33) 50%,
+				rgba(255, 255, 255, 0) 74%
+			)
+			0 0 / 230% 100% no-repeat;
+		mix-blend-mode: screen;
+		-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+		mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		animation: edge-glint-sweep 7.6s ease-in-out infinite;
+		will-change: background-position, opacity;
+	}
+
 	.tilt-card.is-active {
 		--card-scale: 1.025;
 		box-shadow:
 			0 20px 34px rgba(6, 11, 26, 0.62),
 			0 7px 16px rgba(30, 52, 103, 0.36);
+	}
+
+	.tilt-card.is-active::before {
+		opacity: 0.1;
+		animation-play-state: paused;
 	}
 
 	.tilt-card.is-active .holo-dup {
@@ -588,6 +633,11 @@
 			box-shadow:
 				0 20px 34px rgba(6, 11, 26, 0.62),
 				0 7px 16px rgba(30, 52, 103, 0.36);
+		}
+
+		.tilt-card:hover::before {
+			opacity: 0.1;
+			animation-play-state: paused;
 		}
 
 		.tilt-card:hover .holo-dup {
@@ -718,6 +768,17 @@
 		}
 	}
 
+	@keyframes edge-glint-sweep {
+		0%,
+		100% {
+			background-position: -145% 0;
+		}
+
+		50% {
+			background-position: 145% 0;
+		}
+	}
+
 	@media (max-width: 42rem) {
 		.hero {
 			align-content: center;
@@ -765,6 +826,16 @@
 			animation: none;
 			opacity: 0.08;
 			transform: translate3d(0, 0, 0) rotate(-8deg);
+		}
+
+		.tilt-card::before {
+			animation: none;
+			opacity: 0;
+		}
+
+		.logo-wrap {
+			transition: none;
+			transform: none;
 		}
 	}
 </style>
