@@ -36,8 +36,8 @@
 		const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
 		const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
 
-		tiltY = (x - 0.5) * maxTilt * 3;
-		tiltX = (0.5 - y) * maxTilt * 3;
+		tiltY = (x - 0.5) * maxTilt * 6;
+		tiltX = (0.5 - y) * maxTilt * 6;
 		glowX = x * 100;
 		glowY = y * 100;
 		floatInnerShiftX = (x - 0.5) * 4.4;
@@ -172,7 +172,7 @@
 				loaderExitTimeline.to(loaderOrb, {
 					y: '110vh',
 					rotation: 15,
-					scale: 0.9,
+					scale: 0.4,
 					duration: 0.7,
 					ease: 'power3.in'
 				});
@@ -216,31 +216,35 @@
 			introTimeline.add(() => {
 				isIntroAnimating = true;
 				Object.assign(introTiltPose, {
-					tiltX: 10.8,
-					tiltY: -14.4,
-					glowX: 72,
-					glowY: 26,
-					floatInnerShiftX: 3.4,
-					floatInnerShiftY: -2.8
+					tiltX: 13.6,
+					tiltY: -9.2,
+					glowX: 66,
+					glowY: 31,
+					floatInnerShiftX: 2.4,
+					floatInnerShiftY: -1.9
 				});
 				applyIntroTiltPose();
 			}, '-=0.45');
 
-			introTimeline.from('[data-reveal="card"]', { autoAlpha: 0, y: 28, scale: 0.95 }, '<');
+			introTimeline.from(
+				'[data-reveal="card"]',
+				{ autoAlpha: 0, y: -34, scale: 0.95, duration: 0.82, ease: 'power3.out' },
+				'<'
+			);
 			introTimeline.to(
 				introTiltPose,
 				{
-					tiltX: -3.2,
-					tiltY: 4.2,
-					glowX: 38,
-					glowY: 58,
-					floatInnerShiftX: -1.5,
-					floatInnerShiftY: 1.2,
-					duration: 0.4,
-					ease: 'sine.out',
+					tiltX: -2.2,
+					tiltY: 2.8,
+					glowX: 42,
+					glowY: 55,
+					floatInnerShiftX: -1,
+					floatInnerShiftY: 0.8,
+					duration: 0.56,
+					ease: 'power2.inOut',
 					onUpdate: applyIntroTiltPose
 				},
-				'<+=0.08'
+				'<'
 			);
 			introTimeline.to(introTiltPose, {
 				tiltX: 0,
@@ -249,8 +253,8 @@
 				glowY: 50,
 				floatInnerShiftX: 0,
 				floatInnerShiftY: 0,
-				duration: 0.62,
-				ease: 'power3.out',
+				duration: 0.82,
+				ease: 'power4.out',
 				onUpdate: applyIntroTiltPose
 			});
 			introTimeline.add(() => {
@@ -396,23 +400,23 @@
 			<span class="headline-secondary" data-reveal="soon">soon</span>
 		</h1>
 
-		<div
-			data-reveal="card"
-			class="card-wrap"
-			class:tilt-enabled={canTilt}
-			class:is-touch-active={isTouchActive}
-			role="group"
-			aria-label="Interactive launch card stage"
-			oncontextmenu={preventNativeImageActions}
-			ondragstart={preventNativeImageActions}
-			onpointerdown={handlePointerDown}
-			onpointermove={handlePointerMove}
-			onpointerup={endTouchInteraction}
-			onpointercancel={endTouchInteraction}
-			onpointerleave={handlePointerLeave}
-			style={`--glow-x:${glowX}%; --glow-y:${glowY}%;`}
-		>
-			<div class="card-tilt-stage" style={`--tilt-x:${tiltX}deg; --tilt-y:${tiltY}deg;`}>
+		<div data-reveal="card" class="card-intro-shell">
+			<div
+				class="card-wrap"
+				class:tilt-enabled={canTilt}
+				class:is-touch-active={isTouchActive}
+				role="group"
+				aria-label="Interactive launch card stage"
+				oncontextmenu={preventNativeImageActions}
+				ondragstart={preventNativeImageActions}
+				onpointerdown={handlePointerDown}
+				onpointermove={handlePointerMove}
+				onpointerup={endTouchInteraction}
+				onpointercancel={endTouchInteraction}
+				onpointerleave={handlePointerLeave}
+				style={`--glow-x:${glowX}%; --glow-y:${glowY}%;`}
+			>
+				<div class="card-tilt-stage" style={`--tilt-x:${tiltX}deg; --tilt-y:${tiltY}deg;`}>
 				<div aria-hidden="true" class="floating-logo-layer">
 					<div
 						class="floating-logo-inner"
@@ -452,30 +456,31 @@
 						</div>
 					</div>
 				</div>
-				<div
-					class="tilt-card"
-					class:is-active={isTouchActive}
-					class:is-loaded={cardLoaded}
-					role="img"
-					aria-label="Interactive launch artwork preview"
-				>
-					<enhanced:img
-						class="cover image-fade"
+					<div
+						class="tilt-card"
+						class:is-active={isTouchActive}
 						class:is-loaded={cardLoaded}
-						src={cardImage}
-						alt="Decorative card artwork previewing the Keroyokan launch"
-						loading="lazy"
-						decoding="async"
-						sizes="(max-width: 42rem) 11.4rem, 12.2rem"
-						draggable="false"
-						onload={() => {
-							cardLoaded = true;
-						}}
-					/>
-					<img aria-hidden="true" class="cover holo-dup" src={cardImageUrl} alt="" draggable="false" />
-					<img aria-hidden="true" class="cover holo-dup-2" src={cardImageUrl} alt="" draggable="false" />
-					<div aria-hidden="true" class="glow"></div>
-					<div aria-hidden="true" class="holo"></div>
+						role="img"
+						aria-label="Interactive launch artwork preview"
+					>
+						<enhanced:img
+							class="cover image-fade"
+							class:is-loaded={cardLoaded}
+							src={cardImage}
+							alt="Decorative card artwork previewing the Keroyokan launch"
+							loading="lazy"
+							decoding="async"
+							sizes="(max-width: 42rem) 11.4rem, 12.2rem"
+							draggable="false"
+							onload={() => {
+								cardLoaded = true;
+							}}
+						/>
+						<img aria-hidden="true" class="cover holo-dup" src={cardImageUrl} alt="" draggable="false" />
+						<img aria-hidden="true" class="cover holo-dup-2" src={cardImageUrl} alt="" draggable="false" />
+						<div aria-hidden="true" class="glow"></div>
+						<div aria-hidden="true" class="holo"></div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -665,9 +670,15 @@
 		text-transform: lowercase;
 	}
 
-	.card-wrap {
+	.card-intro-shell {
 		width: min(100%, 12.2rem);
 		margin-top: clamp(0.45rem, 1.4vw, 0.75rem);
+		position: relative;
+		will-change: opacity, transform;
+	}
+
+	.card-wrap {
+		width: 100%;
 		perspective: 1100px;
 		position: relative;
 		--floating-logo-active: 0;
@@ -1122,7 +1133,7 @@
 			width: min(25rem, 100%);
 		}
 
-		.card-wrap {
+		.card-intro-shell {
 			width: min(100%, 11.4rem);
 		}
 	}
