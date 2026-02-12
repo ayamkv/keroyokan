@@ -9,6 +9,7 @@
 
 	let canTilt = $state(false);
 	let isTouchActive = $state(false);
+	let logoLoaded = $state(false);
 	let cardLoaded = $state(false);
 	let floatingLoaded = $state(false);
 	let tiltX = $state(0);
@@ -373,16 +374,19 @@
 		: 0};`}
 >
 	<section class="hero" aria-labelledby="coming-soon-title">
-		<div class="logo-wrap">
+		<div class="logo-wrap" data-reveal="logo">
 			<enhanced:img
-				data-reveal="logo"
-				class="logo"
+				class="logo image-fade"
+				class:is-loaded={logoLoaded}
 				src={logoImage}
 				alt="Keroyokan logo"
 				loading="eager"
 				fetchpriority="high"
 				decoding="async"
 				sizes="(max-width: 42rem) 4rem, 5rem"
+				onload={() => {
+					logoLoaded = true;
+				}}
 			/>
 		</div>
 
