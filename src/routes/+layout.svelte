@@ -17,7 +17,8 @@
 		content="all realities, in one deck. soon."
 	/>
 	<meta property="og:type" content="website" />
-	<meta property="og:image" content="/keroyokan%20multisemesta%20-%20og%20image.png" />
+	<meta property="og:image" content="/og-image.jpg" />
+	<meta property="og:image:type" content="image/jpeg" />
 	<meta property="og:image:width" content="800" />
 	<meta property="og:image:height" content="600" />
 	<meta property="og:image:alt" content="Keroyokan Multisemesta - teaser image" />
@@ -28,7 +29,7 @@
 		name="twitter:description"
 		content="all realities, in one deck. soon."
 	/>
-	<meta name="twitter:image" content="/keroyokan%20multisemesta%20-%20og%20image.png" />
+	<meta name="twitter:image" content="/og-image.jpg" />
 	<meta name="twitter:image:alt" content="Keroyokan Multisemesta - teaser image" />
 </svelte:head>
 {@render children()}
