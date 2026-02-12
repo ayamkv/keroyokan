@@ -177,7 +177,7 @@
 					splitWords,
 					{
 						rotationX: -100,
-						transformOrigin: '50% 50% -50px',
+						transformOrigin: '50% 50% -20px',
 						opacity: 0,
 						duration: 0.8,
 						ease: 'power3.out',
