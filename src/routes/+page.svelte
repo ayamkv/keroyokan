@@ -3,6 +3,7 @@
 	import { gsap } from 'gsap';
 	import Instagram from '@lucide/svelte/icons/instagram';
 	import logoImage from '$lib/assets/keroyokan_logo.png?enhanced';
+	import logoImageRaw from '$lib/assets/keroyokan_logo.png';
 	import cardImage from '$lib/assets/card_backcover.png?enhanced';
 	import cardImageUrl from '$lib/assets/card_backcover.png';
 
@@ -18,25 +19,26 @@
 	let bgX = $state(50);
 	let bgY = $state(50);
 	let showLoader = $state(true);
-	let logoShiftX = $state(0);
-	let logoShiftY = $state(0);
+	let floatInnerShiftX = $state(0);
+	let floatInnerShiftY = $state(0);
 
 	const maxTilt = 9;
 
 	function updatePointerPosition(event: PointerEvent) {
-		const target = event.currentTarget as HTMLDivElement | null;
+		const target = event.currentTarget as HTMLElement | null;
 		if (!target) return;
 
-		const rect = target.getBoundingClientRect();
-		const x = (event.clientX - rect.left) / rect.width;
-		const y = (event.clientY - rect.top) / rect.height;
+		const card = target.querySelector<HTMLElement>('.tilt-card');
+		const rect = (card ?? target).getBoundingClientRect();
+		const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+		const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
 
 		tiltY = (x - 0.5) * maxTilt * 3;
 		tiltX = (0.5 - y) * maxTilt * 3;
 		glowX = x * 100;
 		glowY = y * 100;
-		logoShiftX = (x - 0.5) * 6;
-		logoShiftY = (y - 0.5) * 4;
+		floatInnerShiftX = (x - 0.5) * 4.4;
+		floatInnerShiftY = (y - 0.5) * 3.6;
 	}
 
 	function handlePointerMove(event: PointerEvent) {
@@ -67,13 +69,22 @@
 		resetTilt();
 	}
 
+	function handlePointerLeave(event: PointerEvent) {
+		if (event.pointerType === 'touch') return;
+		resetTilt();
+	}
+
 	function resetTilt() {
 		tiltX = 0;
 		tiltY = 0;
 		glowX = 50;
 		glowY = 50;
-		logoShiftX = 0;
-		logoShiftY = 0;
+		floatInnerShiftX = 0;
+		floatInnerShiftY = 0;
+	}
+
+	function preventNativeImageActions(event: Event) {
+		event.preventDefault();
 	}
 
 	function handleBackgroundPointerMove(event: PointerEvent) {
@@ -292,7 +303,7 @@
 		: 0};`}
 >
 	<section class="hero" aria-labelledby="coming-soon-title">
-		<div class="logo-wrap" style={`--logo-shift-x:${logoShiftX}px; --logo-shift-y:${logoShiftY}px;`}>
+		<div class="logo-wrap">
 			<enhanced:img
 				data-reveal="logo"
 				class="logo"
@@ -311,43 +322,83 @@
 			<span class="headline-secondary" data-reveal="soon">soon</span>
 		</h1>
 
-		<div data-reveal="card" class="card-wrap">
-			<div
-				class="tilt-card"
-				class:tilt-enabled={canTilt}
-				class:is-active={isTouchActive}
-				role="img"
-				aria-label="Interactive launch artwork preview"
-				onpointerdown={handlePointerDown}
-				onpointermove={handlePointerMove}
-				onpointerup={endTouchInteraction}
-				onpointercancel={endTouchInteraction}
-				onpointerleave={(event) => {
-					if (event.pointerType === 'touch') return;
-					resetTilt();
-				}}
-				style={`--tilt-x:${tiltX}deg; --tilt-y:${tiltY}deg; --glow-x:${glowX}%; --glow-y:${glowY}%;`}
-			>
-				<enhanced:img
-					class="cover image-fade"
-					class:is-loaded={cardLoaded}
-					src={cardImage}
-					alt="Decorative card artwork previewing the Keroyokan launch"
-					loading="lazy"
-					decoding="async"
-					sizes="(max-width: 42rem) 11.4rem, 12.2rem"
-					onload={() => {
-						cardLoaded = true;
-					}}
-				/>
-				<img
-					aria-hidden="true"
-					class="cover holo-dup"
-					src={cardImageUrl}
-					alt=""
-				/>
-				<div aria-hidden="true" class="glow"></div>
-				<div aria-hidden="true" class="holo"></div>
+		<div
+			data-reveal="card"
+			class="card-wrap"
+			class:tilt-enabled={canTilt}
+			class:is-touch-active={isTouchActive}
+			role="group"
+			aria-label="Interactive launch card stage"
+			oncontextmenu={preventNativeImageActions}
+			ondragstart={preventNativeImageActions}
+			onpointerdown={handlePointerDown}
+			onpointermove={handlePointerMove}
+			onpointerup={endTouchInteraction}
+			onpointercancel={endTouchInteraction}
+			onpointerleave={handlePointerLeave}
+			style={`--glow-x:${glowX}%; --glow-y:${glowY}%;`}
+		>
+			<div class="card-tilt-stage" style={`--tilt-x:${tiltX}deg; --tilt-y:${tiltY}deg;`}>
+				<div aria-hidden="true" class="floating-logo-layer">
+					<div
+						class="floating-logo-inner"
+						style={`--float-inner-shift-x:${floatInnerShiftX}px; --float-inner-shift-y:${floatInnerShiftY}px;`}
+					>
+						<div class="floating-logo-shell">
+							<enhanced:img
+								class="floating-logo floating-logo-base"
+								src={logoImage}
+								alt=""
+								loading="lazy"
+								decoding="async"
+								sizes="(max-width: 42rem) 12.1rem, 16.5rem"
+								draggable="false"
+							/>
+							<img
+								class="floating-logo floating-logo-holo"
+								src={logoImageRaw}
+								alt=""
+								aria-hidden="true"
+								loading="lazy"
+								decoding="async"
+								draggable="false"
+							/>
+							<img
+								class="floating-logo floating-logo-glint"
+								src={logoImageRaw}
+								alt=""
+								aria-hidden="true"
+								loading="lazy"
+								decoding="async"
+								draggable="false"
+							/>
+						</div>
+					</div>
+				</div>
+				<div
+					class="tilt-card"
+					class:is-active={isTouchActive}
+					role="img"
+					aria-label="Interactive launch artwork preview"
+				>
+					<enhanced:img
+						class="cover image-fade"
+						class:is-loaded={cardLoaded}
+						src={cardImage}
+						alt="Decorative card artwork previewing the Keroyokan launch"
+						loading="lazy"
+						decoding="async"
+						sizes="(max-width: 42rem) 11.4rem, 12.2rem"
+						draggable="false"
+						onload={() => {
+							cardLoaded = true;
+						}}
+					/>
+					<img aria-hidden="true" class="cover holo-dup" src={cardImageUrl} alt="" draggable="false" />
+					<img aria-hidden="true" class="cover holo-dup-2" src={cardImageUrl} alt="" draggable="false" />
+					<div aria-hidden="true" class="glow"></div>
+					<div aria-hidden="true" class="holo"></div>
+				</div>
 			</div>
 		</div>
 
@@ -360,7 +411,7 @@
 			aria-label="Follow Keroyokan Multisemesta on Instagram"
 		>
 			<Instagram size={15} strokeWidth={1.8} />
-			<span>@keroyokanmultisemesta</span>
+			<span>keroyokanmultisemesta</span>
 		</a>
 	</section>
 </main>
@@ -466,6 +517,9 @@
 	}
 
 	.hero {
+		--floating-logo-unit: clamp(2rem, 2.2vw, 1.452rem);
+		--floating-logo-size: clamp(8rem, calc(var(--floating-logo-unit) * 16), 12rem);
+		--floating-logo-top: clamp(3.5rem, calc(6rem - var(--floating-logo-unit)), 8rem);
 		width: min(30rem, 100%);
 		position: relative;
 		z-index: 1;
@@ -482,9 +536,7 @@
 	}
 
 	.logo-wrap {
-		transform: translate3d(var(--logo-shift-x, 0px), var(--logo-shift-y, 0px), 0);
-		transition: transform 260ms ease-out;
-		will-change: transform;
+		will-change: opacity, transform;
 	}
 
 	.logo :global(img) {
@@ -539,6 +591,130 @@
 		width: min(100%, 12.2rem);
 		margin-top: clamp(0.45rem, 1.4vw, 0.75rem);
 		perspective: 1100px;
+		position: relative;
+		--floating-logo-active: 0;
+		--floating-logo-scale: 1;
+		--holo2-opacity: 0.04;
+		--holo2-active-opacity: 0.8;
+		--holo2-hue: -44deg;
+		--holo2-sat: 2;
+	}
+
+	.card-tilt-stage {
+		position: relative;
+		transform-style: preserve-3d;
+		transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+		transition: transform 220ms ease-out;
+		will-change: transform;
+	}
+
+	.floating-logo-layer {
+		position: absolute;
+		left: 50%;
+		top: var(--floating-logo-top);
+		z-index: 3;
+		pointer-events: none;
+		transform: translate3d(-50%, 0, 12px);
+	}
+
+	.floating-logo-inner {
+		transform: translate3d(var(--float-inner-shift-x, 0px), var(--float-inner-shift-y, 0px), 0);
+		transition: transform 260ms ease-out;
+		will-change: transform;
+	}
+
+	.floating-logo-shell {
+		width: var(--floating-logo-size);
+		position: relative;
+		isolation: isolate;
+		border-radius: 1rem;
+		transform: scale(var(--floating-logo-scale));
+		transition: transform 260ms ease-out, filter 260ms ease-out;
+		filter: drop-shadow(0 7px 14px rgba(4, 10, 22, 0.5));
+		will-change: transform, filter;
+	}
+
+	.floating-logo {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: auto;
+		display: block;
+		max-width: none;
+		pointer-events: none;
+	}
+
+	.floating-logo-base {
+		position: relative;
+		z-index: 1;
+		opacity: calc(0.94 + (var(--floating-logo-active) * 0.04));
+		filter:
+			drop-shadow(0 0 1.1rem rgba(106, 175, 255, 0.2))
+			hue-rotate(calc(var(--floating-logo-active) * -10deg))
+			saturate(calc(1 + (var(--floating-logo-active) * 0.42)));
+		transition: filter 260ms ease-out, opacity 260ms ease-out;
+		will-change: filter, opacity;
+	}
+
+	.floating-logo-holo {
+		z-index: 2;
+		opacity: calc(0.06 + (var(--floating-logo-active) * 0.24));
+		mix-blend-mode: color-dodge;
+		filter: hue-rotate(-140deg) saturate(2.2);
+		-webkit-mask-image: radial-gradient(
+			circle at var(--glow-x, 50%) var(--glow-y, 50%),
+			rgba(0, 0, 0, 0.95) 0%,
+			rgba(0, 0, 0, 0.7) 25%,
+			transparent 72%
+		);
+		mask-image: radial-gradient(
+			circle at var(--glow-x, 50%) var(--glow-y, 50%),
+			rgba(0, 0, 0, 0.95) 0%,
+			rgba(0, 0, 0, 0.7) 25%,
+			transparent 72%
+		);
+		transition: opacity 260ms ease-out, filter 260ms ease-out;
+	}
+
+	.floating-logo-glint {
+		z-index: 3;
+		opacity: calc(0.04 + (var(--floating-logo-active) * 0.14));
+		mix-blend-mode: screen;
+		filter: saturate(1.5) brightness(1.08);
+		-webkit-mask-image: linear-gradient(
+			108deg,
+			rgba(0, 0, 0, 0) 18%,
+			rgba(0, 0, 0, 0.95) 42%,
+			rgba(0, 0, 0, 0.88) 50%,
+			rgba(0, 0, 0, 0) 74%
+		);
+		mask-image: linear-gradient(
+			108deg,
+			rgba(0, 0, 0, 0) 18%,
+			rgba(0, 0, 0, 0.95) 42%,
+			rgba(0, 0, 0, 0.88) 50%,
+			rgba(0, 0, 0, 0) 74%
+		);
+		-webkit-mask-size: 230% 100%;
+		mask-size: 230% 100%;
+		-webkit-mask-position: -145% 0;
+		mask-position: -145% 0;
+		animation: edge-glint-sweep 7.6s ease-in-out infinite;
+		transition: opacity 260ms ease-out;
+		will-change: opacity, mask-position;
+	}
+
+	.card-wrap.is-touch-active {
+		--floating-logo-active: 1;
+		--floating-logo-scale: 1.045;
+	}
+
+	.card-wrap.is-touch-active .floating-logo-shell {
+		filter: drop-shadow(0 10px 18px rgba(5, 11, 24, 0.44)) drop-shadow(0 0 1rem rgba(94, 149, 255, 0.2));
+	}
+
+	.card-wrap.is-touch-active .floating-logo-glint {
+		animation-play-state: paused;
 	}
 
 	.social-link {
@@ -574,8 +750,7 @@
 		border-radius: 0.6rem;
 		overflow: hidden;
 		transform-style: preserve-3d;
-		transform: translateZ(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
-			scale(var(--card-scale, 1));
+		transform: translateZ(0) scale(var(--card-scale, 1));
 		transition: transform 220ms ease-out, box-shadow 220ms ease-out;
 		touch-action: none;
 		outline: 0.4px solid rgba(117, 178, 235, 0.34);
@@ -627,31 +802,65 @@
 		filter: hue-rotate(-150deg) saturate(2.8);
 	}
 
+	.tilt-card.is-active .holo-dup-2 {
+		opacity: var(--holo2-active-opacity);
+		filter: hue-rotate(var(--holo2-hue)) saturate(calc(var(--holo2-sat) + 0.45)) brightness(1.07);
+	}
+
 	@media (hover: hover) and (pointer: fine) {
-		.tilt-card:hover {
-			--card-scale: 1.055;
+		.card-wrap:hover {
+			--floating-logo-active: 1;
+			--floating-logo-scale: 1.045;
+		}
+
+		.card-wrap:hover .floating-logo-shell {
+			filter: drop-shadow(0 10px 18px rgba(5, 11, 24, 0.44)) drop-shadow(0 0 1rem rgba(94, 149, 255, 0.2));
+		}
+
+		.card-wrap:hover .floating-logo-glint {
+			animation-play-state: paused;
+		}
+
+		.card-wrap:hover .tilt-card {
+			--card-scale: 1.045;
 			box-shadow:
 				0 20px 34px rgba(6, 11, 26, 0.62),
 				0 7px 16px rgba(30, 52, 103, 0.36);
 		}
 
-		.tilt-card:hover::before {
+		.card-wrap:hover .tilt-card::before {
 			opacity: 0.1;
 			animation-play-state: paused;
 		}
 
-		.tilt-card:hover .holo-dup {
+		.card-wrap:hover .tilt-card .holo-dup {
 			opacity: 1;
 			filter: hue-rotate(-150deg) saturate(2.8);
 		}
+
+		.card-wrap:hover .tilt-card .holo-dup-2 {
+			opacity: var(--holo2-active-opacity);
+			filter: hue-rotate(var(--holo2-hue)) saturate(calc(var(--holo2-sat) + 0.45)) brightness(1.07);
+		}
+
+		.tilt-enabled {
+			cursor: grab;
+		}
+
+		.tilt-enabled:active {
+			cursor: grabbing;
+		}
 	}
 
-	.tilt-enabled {
-		cursor: grab;
-	}
-
-	.tilt-enabled:active {
-		cursor: grabbing;
+	.card-wrap,
+	.card-wrap :global(img),
+	.floating-logo,
+	.cover,
+	.holo-dup,
+	.holo-dup-2 {
+		-webkit-touch-callout: none;
+		-webkit-user-drag: none;
+		user-select: none;
 	}
 
 	.cover {
@@ -691,21 +900,49 @@
 		inset: 0;
 		height: 100%;
 		opacity: 0;
-		mix-blend-mode: color-dodge;
-		filter: hue-rotate(-150deg) saturate(100);
+		mix-blend-mode: hard-light;
+		filter: hue-rotate(-150deg) saturate(200);
 		transition: opacity 240ms ease-out, filter 240ms ease-out;
 		will-change: opacity, filter;
 		-webkit-mask-image: radial-gradient(
 			circle at var(--glow-x, 50%) var(--glow-y, 50%),
 			rgba(0, 0, 0, 0.95) 0%,
 			rgba(0, 0, 0, 0.72) 24%,
-			transparent 80%
+			transparent 100%
 		);
 		mask-image: radial-gradient(
 			circle at var(--glow-x, 50%) var(--glow-y, 50%),
 			rgba(0, 0, 0, 0.95) 0%,
 			rgba(0, 0, 0, 0.72) 24%,
-			transparent 80%
+			transparent 100%
+		);
+		pointer-events: none;
+	}
+
+	.holo-dup-2 {
+		position: absolute;
+		inset: 0;
+		height: 100%;
+		opacity: var(--holo2-opacity);
+		mix-blend-mode: screen;
+		filter: hue-rotate(var(--holo2-hue)) saturate(200) brightness(1.6) contrast(1.8);
+		transform: translate3d(-0.7%, 0.5%, 0);
+		transition:
+			opacity 280ms ease-out,
+			filter 280ms ease-out,
+			transform 280ms ease-out;
+		will-change: opacity, filter, transform;
+		-webkit-mask-image: radial-gradient(
+			circle at calc(var(--glow-x, 50%) + 6%) calc(var(--glow-y, 50%) - 5%),
+			rgba(0, 0, 0, 0.88) 0%,
+			rgba(0, 0, 0, 0.56) 20%,
+			transparent 100%
+		);
+		mask-image: radial-gradient(
+			circle at calc(var(--glow-x, 50%) + 6%) calc(var(--glow-y, 50%) - 5%),
+			rgba(0, 0, 0, 0.88) 0%,
+			rgba(0, 0, 0, 0.56) 20%,
+			transparent 100%
 		);
 		pointer-events: none;
 	}
@@ -772,10 +1009,14 @@
 		0%,
 		100% {
 			background-position: -145% 0;
+			-webkit-mask-position: -145% 0;
+			mask-position: -145% 0;
 		}
 
 		50% {
 			background-position: 145% 0;
+			-webkit-mask-position: 145% 0;
+			mask-position: 145% 0;
 		}
 	}
 
@@ -814,7 +1055,16 @@
 			transform: none;
 		}
 
+		.card-tilt-stage {
+			transition: none;
+			transform: none;
+		}
+
 		.holo-dup {
+			transition: none;
+		}
+
+		.holo-dup-2 {
 			transition: none;
 		}
 
@@ -836,6 +1086,21 @@
 		.logo-wrap {
 			transition: none;
 			transform: none;
+		}
+
+		.floating-logo-inner {
+			transition: none;
+			transform: none;
+		}
+
+		.floating-logo,
+		.floating-logo-shell {
+			transition: none;
+		}
+
+		.floating-logo-glint {
+			animation: none;
+			opacity: 0.08;
 		}
 	}
 </style>
